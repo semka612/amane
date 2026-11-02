@@ -29,19 +29,22 @@ impl Device {
     }
 }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone)]
 pub struct Level {
     // 0 to 100
     pub volume: u8,
 
     pub muted: bool,
+
+    pub name: Box<str>,
 }
 
 // what pulse reports for a default device, before converting to percent
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct Levels {
     volumes: ChannelVolumes,
     muted: bool,
+    name: Box<str>,
 }
 
 // how long to wait before trying the sound server again while it is down
@@ -81,6 +84,7 @@ pub fn read(device: Device) -> Level {
         Level {
             volume: percent(levels.volumes.avg()),
             muted: levels.muted,
+            name: levels.name,
         }
     })
 }
@@ -211,6 +215,7 @@ impl Connection {
                     slot.set(Some(Levels {
                         volumes: sink.volume,
                         muted: sink.mute,
+                        name: Box::from(sink.description.as_deref().unwrap_or("None")),
                     }));
                 });
 
@@ -226,6 +231,7 @@ impl Connection {
                     slot.set(Some(Levels {
                         volumes: source.volume,
                         muted: source.mute,
+                        name: Box::from(source.description.as_deref().unwrap_or("None")),
                     }));
                 });
 

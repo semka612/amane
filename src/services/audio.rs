@@ -5,17 +5,21 @@ use crate::services::worker;
 
 use pulse::Device;
 
-#[derive(Default)]
+#[derive(Default, Clone, PartialEq)]
 pub struct Audio {
     // 0 to 100, for the default output
     volume: u8,
 
     muted: bool,
 
+    name: Box<str>,
+
     // 0 to 100, for the default microphone
     microphone_volume: u8,
 
     microphone_muted: bool,
+
+    microphone_name: Box<str>,
 }
 
 // event-driven, the sound server announces every volume change
@@ -29,28 +33,20 @@ impl Service for Audio {
     }
 
     fn update(&mut self) -> bool {
-        let before = (
-            self.volume,
-            self.muted,
-            self.microphone_volume,
-            self.microphone_muted,
-        );
+        let before = self.clone();
 
         let output = pulse::read(Device::Output);
         let input = pulse::read(Device::Input);
 
         self.volume = output.volume;
         self.muted = output.muted;
+        self.name = output.name;
 
         self.microphone_volume = input.volume;
         self.microphone_muted = input.muted;
+        self.microphone_name = input.name;
 
-        (
-            self.volume,
-            self.muted,
-            self.microphone_volume,
-            self.microphone_muted,
-        ) != before
+        *self != before
     }
 
     // the sound server also announces changes to devices nothing shows
@@ -74,12 +70,20 @@ impl Audio {
         self.muted
     }
 
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     pub fn microphone_volume(&self) -> u8 {
         self.microphone_volume
     }
 
     pub fn microphone_muted(&self) -> bool {
         self.microphone_muted
+    }
+
+    pub fn microphone_name(&self) -> &str {
+        &self.microphone_name
     }
 
     // anything above 100 is treated as 100
